@@ -83,3 +83,21 @@ fastapi dev src/app/main.py
 
 ## **Lógica de negocio**
 
+```mermaid
+sequenceDiagram
+    autonumber
+    box
+      participant C as 💻 Client
+    end
+    box
+      participant S as ⛃ Server
+    end
+
+    C->>S: Handshake (HTTP Upgrade)
+    S-->>C: Connection opened
+    C<<->>S: Bidirectional messages
+    Note over C,S: Open and persistent connection
+    C<<->>S: One side closes channel
+    Note over C,S: Connection closed
+
+```
