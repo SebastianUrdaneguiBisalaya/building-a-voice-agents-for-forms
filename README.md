@@ -83,6 +83,14 @@ fastapi dev src/app/main.py
 
 ## **Lógica de negocio**
 
+### WebSocket
+
+**WebSocket** es un protocolo de comunicación que permite establcer una comunicación bidireccional y de larga duración entre un cliente y un servidor.
+
+Existen otros protocolos de comunicación como **HTTP**, **HTTP/2 Streaming**, **Server-Sent Events (SSE)**, **WebRTC**, etc. Sin embargo, para nuestro caso, nos centraremos en **WebSocket** para establecer una comunicación persistente y fluida entre el cliente y el servidor.
+
+El siguiente diagrama muestra el flujo de comunicación entre el cliente y el servidor utilizando **WebSocket**:
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -99,5 +107,43 @@ sequenceDiagram
     Note over C,S: Open and persistent connection
     C<<->>S: One side closes channel
     Note over C,S: Connection closed
+
+```
+
+Básicamente, el cliente realiza una petición HTTP para establecer una conexión bidireccional y duradera con el servidor, este proceso se conoce como **handshake**. Una vez establecida la conexión, el cliente envía mensajes bidireccionales a través de la conexión y el servidor responde a los mensajes enviados.
+
+### WebSocket en FastAPI
+
+```python
+
+```
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as 🧑 Usuario
+    participant C as 💻 Cliente (App/Browser)
+    participant STT as 🤖 Speech-to-Text (AI)
+    participant LLM as 🧠 LLM (AI)
+    participant DB as 🗄️ Database
+
+    Note over C,U: El cliente reproduce la pregunta en audio (TTS local o externo)
+    C->>U: "¿Cuál es tu nombre?"
+    U->>C: Respuesta en voz
+
+    C->>STT: Enviar audio
+    STT-->>C: Texto transcrito
+
+    C->>LLM: Validar si la transcripción responde la pregunta
+    LLM-->>C: "Respuesta válida" o "No respondió"
+
+    alt Respuesta válida
+        C->>DB: Guardar {pregunta, respuesta}
+        C->>U: Siguiente pregunta (audio)
+    else No respondió
+        C->>U: Repetir pregunta (audio)
+    end
+
+    Note over C,DB: Al final → se guarda el formulario completo
 
 ```
