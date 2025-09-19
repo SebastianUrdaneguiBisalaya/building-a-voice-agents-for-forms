@@ -16,6 +16,20 @@ API_GROQ=****************
 
 ## **Business logic**
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as 💻 Client
+    participant S as ⛃ Server
+
+    C->>S: Handshake (HTTP Upgrade)
+    S-->>C: Connection opened
+    C<<->>S: Bidirectional messages
+    Note over C,S: Open and persistent connection
+    C<<->>S: One side closes channel
+    Note over C,S: Connection closed
+```
+
 
 > [!NOTE]
 > Spanish version
@@ -94,28 +108,70 @@ El siguiente diagrama muestra el flujo de comunicación entre el cliente y el se
 ```mermaid
 sequenceDiagram
     autonumber
-    box
-      participant C as 💻 Client
-    end
-    box
-      participant S as ⛃ Server
-    end
+    participant C as 💻 Cliente
+    participant S as ⛃ Servidor
 
-    C->>S: Handshake (HTTP Upgrade)
-    S-->>C: Connection opened
-    C<<->>S: Bidirectional messages
-    Note over C,S: Open and persistent connection
-    C<<->>S: One side closes channel
-    Note over C,S: Connection closed
-
+    C->>S: Handshake (HTTP actualización)
+    S-->>C: Conexión abierta
+    C<<->>S: Mensajes bidireccionales
+    Note over C,S: Conexión abierta y persistente
+    C<<->>S: Una parte cierra la conexión
+    Note over C,S: Conexión cerrada
 ```
 
 Básicamente, el cliente realiza una petición HTTP para establecer una conexión bidireccional y duradera con el servidor, este proceso se conoce como **handshake**. Una vez establecida la conexión, el cliente envía mensajes bidireccionales a través de la conexión y el servidor responde a los mensajes enviados.
 
 ### WebSocket en FastAPI
 
-```python
+> [!TIP]
+> Empezaremos desde un nivel básico para entender cómo funciona el proceso y culminaremos en un nivel avanzado con la implementación del agente de voz para formularios.
 
+```python
+from fastapi import APIRouter, WebSocket
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+
+manager = ConnectionManager()
+
+router = APIRouter(
+    prefix="/api/v1",
+    tags=["Voice Agents"],
+    responses={404: {"description": "Not found"}},
+)
+
+@router.websocket("/ws/voice-agents")
+async def voice_agents(websocket: WebSocket):
+    try:
+      await manager.connect(websocket)
+    except Exception as e:
+      await manager.disconnect(websocket)
+      return
+		
+		try:
+      while True:
+        data = await websocket.receive_text()
+				await manager.send_personal_message(f"Received: {data}", websocket)
+    except WebSocketDisconnect:
+    except Exception as e:
+        await manager.disconnect(websocket)
+        return
 ```
 
 ```mermaid

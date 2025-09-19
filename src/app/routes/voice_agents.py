@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from src.config.config import settings
+from src.classes.classes import manager
 import logging
 
 level = logging.INFO if settings.environment == "development" else logging.WARNING
@@ -14,6 +15,17 @@ router = APIRouter(
 )
 
 
-@router.get("/voice-agents")
-def voice_agents():
-    return {"message": "Voice Agents"}
+@router.websocket("/ws/voice-agents")
+async def voice_agents(websocket: WebSocket):
+    try:
+        await manager.connect(websocket)
+        while True:
+            data = await websocket.receive_text()
+            await manager.send_personal_message(f"Received: {data}", websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info(f"Client disconnected: {websocket.client}")
+    except Exception as e:
+        manager.disconnect(websocket)
+        logger.error(f"Websocket error: {e}", exc_info=True)
+        await websocket.close(code=1011, reason="Internal server error")
