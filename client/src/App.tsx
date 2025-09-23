@@ -4,9 +4,9 @@ import { useAudioWebSocket } from './hooks/useAudioWebsocket'
 
 function App() {
 	const { mode, sendAudio, toggleConversation, startRecording } = useAudioWebSocket({
-		wsUrl: "ws://localhost:8000/api/v1/ws/voice-agent",
+		wsUrl: "ws://localhost:8000/api/v1/ws/voice-agents",
 		userId: "user-1",
-		language: "en-US",
+		language: "en-GB",
 	});
 
 

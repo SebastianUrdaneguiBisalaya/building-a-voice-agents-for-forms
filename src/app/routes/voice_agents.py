@@ -45,6 +45,7 @@ async def voice_agents(websocket: WebSocket):
         await websocket.send_text(greeting)
         while True:
             data = await websocket.receive_json()
+            print(data)
             audio_base_64 = data.get("audio")
             if not audio_base_64:
                 await websocket.send_text("No audio received")

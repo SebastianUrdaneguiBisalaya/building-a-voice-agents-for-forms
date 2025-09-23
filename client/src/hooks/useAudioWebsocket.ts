@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { textToSpeech } from "../lib/elevenlabs";
+import { speak } from "../lib/voice";
 
 type UseAudioWebsocketOptions = {
   wsUrl: string;
@@ -15,11 +15,9 @@ export function useAudioWebSocket({
   language,
 }: UseAudioWebsocketOptions) {
   const [status, setStatus] = useState<WebSocketStatus>("idle");
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-  const [mode, setMode] = useState<"user" | "system">("user");
+  const [mode, setMode] = useState<"user" | "system">("system");
   const [toggleConversation, setToggleConversation] = useState<boolean>(false);
 
-  const voiceId = "Atp5cNFg1Wj5gyKD7HWV";
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -36,13 +34,6 @@ export function useAudioWebSocket({
     requestPermission();
   }, []);
 
-  const stopRecording = useCallback(() => {
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
-    }
-  }, []);
-
   const startUserRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -51,9 +42,32 @@ export function useAudioWebSocket({
       const recorder = new MediaRecorder(stream, {
         mimeType: "audio/webm",
       });
+
+      const chunks: Blob[] = [];
+
       recorder.ondataavailable = (event: BlobEvent) => {
         if (event.data.size > 0) {
-          setAudioChunks((prev) => [...prev, event.data]);
+          chunks.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        try {
+          const ws = wsRef.current;
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+          const audioBlob = new Blob(chunks, { type: "audio/webm" });
+          const arrayBuffer = await audioBlob.arrayBuffer();
+          const base64 = btoa(
+            new Uint8Array(arrayBuffer).reduce(
+              (data, byte) => data + String.fromCharCode(byte),
+              ""
+            )
+          );
+          ws.send(JSON.stringify({ audio: base64 }));
+          setMode("system");
+        } catch (error) {
+          console.error("Error sending audio:", error);
         }
       };
       recorder.start();
@@ -89,14 +103,13 @@ export function useAudioWebSocket({
           const data = JSON.parse(event.data);
           const { message, answers } = data;
           if (message) {
-            await textToSpeech({
+            speak({
               text: message,
               languageCode: language,
-              voiceId,
+              voiceName: "Google UK English Male",
             });
 
             if (answers) {
-              stopRecording();
               ws.close();
               setStatus("closed");
             } else {
@@ -105,10 +118,10 @@ export function useAudioWebSocket({
           }
         } catch {
           const textResponse = event.data;
-          await textToSpeech({
+          speak({
             text: textResponse,
             languageCode: language,
-            voiceId,
+            voiceName: "Google UK English Male",
           });
           await startUserRecording();
         }
@@ -120,41 +133,14 @@ export function useAudioWebSocket({
       console.error("Error starting recording:", error);
       setStatus("error");
     }
-  }, [wsUrl, userId, language, voiceId, startUserRecording, stopRecording]);
+  }, [wsUrl, userId, language, startUserRecording]);
 
   const sendAudio = useCallback(() => {
-    return new Promise<void>((resolve, reject) => {
-      try {
-        const recorder = mediaRecorderRef.current;
-        const ws = wsRef.current;
-
-        if (!recorder || !ws || ws.readyState !== WebSocket.OPEN) {
-          reject(new Error("WebSocket is not connected"));
-          return;
-        }
-
-        recorder.stop();
-
-        recorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-          const arrayBuffer = await audioBlob.arrayBuffer();
-          const base64 = btoa(
-            new Uint8Array(arrayBuffer).reduce(
-              (data, byte) => data + String.fromCharCode(byte),
-              ""
-            )
-          );
-
-          ws.send(JSON.stringify({ audio: base64 }));
-          setAudioChunks([]);
-          setMode("system");
-          resolve();
-        };
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }, [audioChunks]);
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+  }, []);
 
   return {
     status,
