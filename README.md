@@ -3,7 +3,7 @@
 
 # **Building a voice agent for forms using FastAPI and Groq**
 
-> Made with 💚 by [Sebastian Marat Urdanegui Bisalaya](https://sebastianurdanegui.vercel.app/)
+> Made with 💚 by <a href="https://sebastianurdanegui.vercel.app/" target="_blank">Sebastian Marat Urdanegui Bisalaya</a>
 
 ## **Description**
 
@@ -36,7 +36,7 @@ sequenceDiagram
 
 # **Construyendo un agente de voz para formularios usando FastAPI y Groq**
 
-> Hecho con 💚 por [Sebastian Marat Urdanegui Bisalaya](https://sebastianurdanegui.vercel.app/)
+> Hecho con 💚 por <a href="https://sebastianurdanegui.vercel.app/" target="_blank">Sebastian Marat Urdanegui Bisalaya</a>
 
 ## **Descripción**
 
@@ -44,14 +44,14 @@ Actualmente, las aplicaciones de la inteligencia artificial (AI) se han vuelto c
 
 Hace poco tuve la idea de crear un **agente de voz para formularios desde cero** con el objetivo que el cliente (a partir de ahora denotaré al usuario como cliente) pueda completar los formularios que se presenten en su actividad laboral, sin tener que escribir directamente los datos, sino utilizando su voz para agilizar el proceso reduciendo el tiempo de ingesta de datos. Sin embargo, antes de lanzarse a _codear_ es importante entender cuál es el proceso detrás del telón y, a partir de ello, construir la herramienta. La idea me parece genial y más aún que consideré documentar el proceso de desarrollo, para que los demás puedan replicar y mejorar la aplicación.
 
-Por ahora, me enfocaré en el desarrollo del back-end ya que considero que es la parte fundamental para que el cliente (web/mobile app) pueda interactuar con nuestro agente. Utilizaré [Apidog](https://apidog.com/?utm_source=google_search&utm_medium=g&utm_campaign=21950794503&utm_content=174276878794&utm_term=postman&gad_source=1&gad_campaignid=21950794503&gbraid=0AAAAA-gKXrAXuQ5SDywhkC-p3I7Q1GrPk&gclid=Cj0KCQjwuKnGBhD5ARIsAD19RsZMH8AR5znhCr0T3MPvjfuflAkfQJa3YVRNtnNnpNug5e4DvTL_mgoaAl6CEALw_wcB) como plataforma de desarrollo de APIs para probar los endpoints.
+Por ahora, me enfocaré en el desarrollo del back-end ya que considero que es la parte fundamental para que el cliente (web/mobile app) pueda interactuar con nuestro agente. Utilizaré <a href="https://apidog.com/?utm_source=google_search&utm_medium=g&utm_campaign=21950794503&utm_content=174276878794&utm_term=postman&gad_source=1&gad_campaignid=21950794503&gbraid=0AAAAA-gKXrAXuQ5SDywhkC-p3I7Q1GrPk&gclid=Cj0KCQjwuKnGBhD5ARIsAD19RsZMH8AR5znhCr0T3MPvjfuflAkfQJa3YVRNtnNnpNug5e4DvTL_mgoaAl6CEALw_wcB" target="_blank">Apidog</a> como plataforma de desarrollo de APIs para probar los endpoints.
 
-A continuación, detallaré los pasos para clonar el presente [repositorio](https://github.com/SebastianUrdaneguiBisalaya/building-a-voice-agents-for-forms) en tu máquina y puedas seguir la explicación de cada uno de los pasos, y si deseas, realizar los cambios que consideres necesarios para adaptarlo a tus necesidades.
+A continuación, detallaré los pasos para clonar el <a href="https://github.com/SebastianUrdaneguiBisalaya/building-a-voice-agents-for-forms" target="_blank">repositorio</a> en tu máquina y puedas seguir la explicación de cada uno de los pasos, y si deseas, realizar los cambios que consideres necesarios para adaptarlo a tus necesidades.
 
-En esta ocasión, utilizaré [FastAPI](https://fastapi.tiangolo.com/) como framework para crear el back-end y [Groq](https://groq.com/) para conectarme a los modelos de AI y obtener los resultados.
+En esta ocasión, utilizaré <a href="https://fastapi.tiangolo.com/" target="_blank">FastAPI</a> como framework para crear el back-end y <a href="https://groq.com/" target="_blank">Groq</a> para conectarme a los modelos de AI y obtener los resultados.
 
 > [!TIP]
-> Puedes desarrollar esta aplicación en el framework de tu preferencia como [Express.js](https://expressjs.com/), [NestJS](https://nestjs.com/), [Route Handlers de Next.js](p), etc. Eligo [FastAPI](https://fastapi.tiangolo.com/) por el alto rendimiento, la facilidad de uso y utiliza el lenguaje de programación [Python](https://www.python.org/), logrando que el desarrollo se más fácil y robusto.
+> Puedes desarrollar esta aplicación en el framework de tu preferencia como <a href="https://expressjs.com/" target="_blank">Express.js</a>, <a href="https://nestjs.com/" target="_blank">NestJS</a>, [Route Handlers de Next.js](p), etc. Eligo <a href="https://fastapi.tiangolo.com/" target="_blank">FastAPI</a> por el alto rendimiento, la facilidad de uso y utiliza el lenguaje de programación <a href="https://www.python.org/" target="_blank">Python</a>, logrando que el desarrollo se más fácil y robusto.
 
 ## **Instalación**
 
@@ -126,9 +126,7 @@ Básicamente, el cliente realiza una petición HTTP para establecer una conexió
 > [!TIP]
 > Empezaremos desde un nivel básico para entender cómo funciona el proceso y culminaremos en un nivel avanzado con la implementación del agente de voz para formularios.
 
-```python
-from fastapi import APIRouter, WebSocket
-
+```python title="src/classes/classes.py"
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
@@ -144,8 +142,26 @@ class ConnectionManager:
         await websocket.send_text(message)
 
     async def broadcast(self, message: str):
+        disconnected = []
         for connection in self.active_connections:
-            await connection.send_text(message)
+            try:
+                await connection.send_text(message)
+            except Exception as e:
+                disconnected.append(connection)
+
+        for conn in disconnected:
+            self.disconnect(conn)
+```
+
+```python title="src/app/routes/voice_agents.py"
+from fastapi import APIRouter, WebSocket
+from src.config.config import settings
+import logging
+
+level = logging.INFO if settings.environment == "development" else logging.WARNING
+
+logging.basicConfig(level=level)
+logger = logging.getLogger(__name__)
 
 
 manager = ConnectionManager()
@@ -159,19 +175,26 @@ router = APIRouter(
 @router.websocket("/ws/voice-agents")
 async def voice_agents(websocket: WebSocket):
     try:
-      await manager.connect(websocket)
-    except Exception as e:
-      await manager.disconnect(websocket)
-      return
-		
-		try:
-      while True:
-        data = await websocket.receive_text()
-				await manager.send_personal_message(f"Received: {data}", websocket)
+        await manager.connect(websocket)
+        while True:
+            data = await websocket.receive_text()
+            await manager.send_personal_message(f"Received: {data}", websocket)
     except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info(f"Client disconnected: {websocket.client}")
     except Exception as e:
-        await manager.disconnect(websocket)
-        return
+        manager.disconnect(websocket)
+        logger.error(f"Websocket error: {e}", exc_info=True)
+        await websocket.close(code=1011, reason="Internal server error")
+```
+
+```python title="src/config/config.py"
+from src.config.config import settings
+from groq import Groq
+
+groq_client = Groq(
+    api_key=settings.api_groq,
+)
 ```
 
 ```mermaid
@@ -183,7 +206,7 @@ sequenceDiagram
     participant LLM as 🧠 LLM (AI)
     participant DB as 🗄️ Database
 
-    Note over C,U: El cliente reproduce la pregunta en audio (TTS local o externo)
+    Note over C,U: El cliente reproduce la pregunta<br>en audio (TTS local o externo)
     C->>U: "¿Cuál es tu nombre?"
     U->>C: Respuesta en voz
 
@@ -200,6 +223,5 @@ sequenceDiagram
         C->>U: Repetir pregunta (audio)
     end
 
-    Note over C,DB: Al final → se guarda el formulario completo
-
+    Note over C,DB: Al final, se guarda el formulario completo
 ```

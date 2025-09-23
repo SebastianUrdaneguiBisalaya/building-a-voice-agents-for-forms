@@ -1,3 +1,4 @@
+from typing import Any, Dict
 from fastapi import WebSocket
 
 
@@ -25,6 +26,23 @@ class ConnectionManager:
 
         for conn in disconnected:
             self.disconnect(conn)
+
+
+class FormSession:
+    def __init__(self, questions: list[dict]):
+        self.current_index = 0
+        self.questions = questions
+        self.answers = Dict[str, Any] = {}
+        self.completed = False
+
+    def current_question(self) -> dict:
+        return self.questions[self.current_index]
+
+    def record_answer(self, key: str, value: Any):
+        self.answers[key] = value
+        self.current_index += 1
+        if self.current_index >= len(self.questions):
+            self.completed = True
 
 
 manager = ConnectionManager()
