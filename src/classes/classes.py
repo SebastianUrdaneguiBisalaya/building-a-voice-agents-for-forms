@@ -32,7 +32,7 @@ class FormSession:
     def __init__(self, questions: list[dict]):
         self.current_index = 0
         self.questions = questions
-        self.answers = Dict[str, Any] = {}
+        self.answers: Dict[str, Any] = {}
         self.completed = False
 
     def current_question(self) -> dict:

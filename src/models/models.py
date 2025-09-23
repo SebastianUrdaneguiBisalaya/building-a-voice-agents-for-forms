@@ -29,10 +29,15 @@ class MessagesGroq(BaseModel):
     content: str
 
 
+class GreetingGroq(BaseModel):
+    language: str
+    current_question: str
+
+
 class ValidateDataGroq(BaseModel):
     language: str
     current_question: str
-    next_question: str
+    next_question: Optional[str] = None
     transcription: str
     expected_type: str
 
