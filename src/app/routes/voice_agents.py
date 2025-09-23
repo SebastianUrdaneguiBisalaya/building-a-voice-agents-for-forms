@@ -2,8 +2,8 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Dict
 from src.config.config import settings
 from src.classes.classes import manager, FormSession
-from src.lib.groq import greeting_groq, validate_data_groq
-from src.models.models import GreetingGroq, ValidateDataGroq
+from src.lib.groq import greeting_groq, transcription_groq, validate_data_groq
+from src.models.models import GreetingGroq, TranscriptionGroq, ValidateDataGroq
 import logging
 
 level = logging.INFO if settings.environment == "development" else logging.WARNING
@@ -44,7 +44,17 @@ async def voice_agents(websocket: WebSocket):
         ))
         await websocket.send_text(greeting)
         while True:
-            data = await websocket.receive_text()
+            data = await websocket.receive_json()
+            audio_base_64 = data.get("audio")
+            if not audio_base_64:
+                await websocket.send_text("No audio received")
+                continue
+            transcription = await transcription_groq(
+                TranscriptionGroq(
+                    audio_base64=audio_base_64,
+                    language=language,
+                )
+            )
             current_question = session.current_question()
             next_question = None if session.current_index + \
                 1 >= len(session.questions) else session.questions[session.current_index + 1]
@@ -52,7 +62,7 @@ async def voice_agents(websocket: WebSocket):
                 language=language,
                 current_question=current_question["question"],
                 next_question=next_question["question"] if next_question else None,
-                transcription=data,
+                transcription=transcription,
                 expected_type=current_question["type"],
             ))
             if not result.is_response_valid:

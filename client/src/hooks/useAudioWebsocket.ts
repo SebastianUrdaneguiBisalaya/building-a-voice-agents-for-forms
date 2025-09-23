@@ -36,6 +36,34 @@ export function useAudioWebSocket({
     requestPermission();
   }, []);
 
+  const stopRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+  }, []);
+
+  const startUserRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
+      const recorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm",
+      });
+      recorder.ondataavailable = (event: BlobEvent) => {
+        if (event.data.size > 0) {
+          setAudioChunks((prev) => [...prev, event.data]);
+        }
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setMode("user");
+    } catch (error) {
+      console.error("Error starting user recording:", error);
+    }
+  }, []);
+
   const startRecording = useCallback(async () => {
     setToggleConversation((prev) => !prev);
     try {
@@ -57,38 +85,42 @@ export function useAudioWebSocket({
       };
 
       ws.onmessage = async (event: MessageEvent) => {
-        const textResponse = event.data as string;
-        await textToSpeech({
-          text: textResponse,
-          languageCode: language,
-          voiceId: voiceId,
-        });
-        setMode("user");
+        try {
+          const data = JSON.parse(event.data);
+          const { message, answers } = data;
+          if (message) {
+            await textToSpeech({
+              text: message,
+              languageCode: language,
+              voiceId,
+            });
+
+            if (answers) {
+              stopRecording();
+              ws.close();
+              setStatus("closed");
+            } else {
+              await startUserRecording();
+            }
+          }
+        } catch {
+          const textResponse = event.data;
+          await textToSpeech({
+            text: textResponse,
+            languageCode: language,
+            voiceId,
+          });
+          await startUserRecording();
+        }
       };
 
       wsRef.current = ws;
       setStatus("connecting");
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-      });
-      const recorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm",
-      });
-
-      recorder.ondataavailable = (event: BlobEvent) => {
-        if (event.data.size > 0) {
-          setAudioChunks((prev) => [...prev, event.data]);
-        }
-      };
-
-      recorder.start();
-      mediaRecorderRef.current = recorder;
     } catch (error) {
       console.error("Error starting recording:", error);
       setStatus("error");
     }
-  }, [wsUrl, userId, language]);
+  }, [wsUrl, userId, language, voiceId, startUserRecording, stopRecording]);
 
   const sendAudio = useCallback(() => {
     return new Promise<void>((resolve, reject) => {
