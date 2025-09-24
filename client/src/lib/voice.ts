@@ -2,9 +2,10 @@ interface Voice {
   text: string;
   languageCode: string;
   voiceName?: string;
+  onEnd?: () => void;
 }
 
-export const speak = ({ text, languageCode, voiceName }: Voice) => {
+export const speak = ({ text, languageCode, voiceName, onEnd }: Voice) => {
   const synth = window.speechSynthesis;
   let voices = synth.getVoices();
 
@@ -20,6 +21,9 @@ export const speak = ({ text, languageCode, voiceName }: Voice) => {
       if (selected) {
         utterance.voice = selected;
       }
+    }
+    if (onEnd) {
+      utterance.onend = onEnd;
     }
     synth.speak(utterance);
   };

@@ -45,12 +45,11 @@ async def voice_agents(websocket: WebSocket):
         await websocket.send_text(greeting)
         while True:
             data = await websocket.receive_json()
-            print(data)
             audio_base_64 = data.get("audio")
             if not audio_base_64:
                 await websocket.send_text("No audio received")
                 continue
-            transcription = await transcription_groq(
+            transcription = transcription_groq(
                 TranscriptionGroq(
                     audio_base64=audio_base_64,
                     language=language,

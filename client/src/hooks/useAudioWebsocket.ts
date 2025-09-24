@@ -4,7 +4,8 @@ import { speak } from "../lib/voice";
 type UseAudioWebsocketOptions = {
   wsUrl: string;
   userId: string;
-  language: string;
+  languageToClient: string;
+  languageToServer: string;
 };
 
 type WebSocketStatus = "idle" | "connecting" | "connected" | "error" | "closed";
@@ -12,7 +13,8 @@ type WebSocketStatus = "idle" | "connecting" | "connected" | "error" | "closed";
 export function useAudioWebSocket({
   wsUrl,
   userId,
-  language,
+  languageToClient,
+  languageToServer,
 }: UseAudioWebsocketOptions) {
   const [status, setStatus] = useState<WebSocketStatus>("idle");
   const [mode, setMode] = useState<"user" | "system">("system");
@@ -64,7 +66,11 @@ export function useAudioWebSocket({
               ""
             )
           );
-          ws.send(JSON.stringify({ audio: base64 }));
+          ws.send(
+            JSON.stringify({
+              audio: `data:audio/webm;base64,${base64}`,
+            })
+          );
           setMode("system");
         } catch (error) {
           console.error("Error sending audio:", error);
@@ -83,7 +89,7 @@ export function useAudioWebSocket({
     try {
       const url = `${wsUrl}?user_id=${encodeURIComponent(
         userId
-      )}&language=${encodeURIComponent(language)}`;
+      )}&language=${encodeURIComponent(languageToServer)}`;
       const ws = new WebSocket(url);
 
       ws.onopen = () => setStatus("connected");
@@ -105,25 +111,28 @@ export function useAudioWebSocket({
           if (message) {
             speak({
               text: message,
-              languageCode: language,
+              languageCode: languageToClient,
               voiceName: "Google UK English Male",
+              onEnd: async () => {
+                if (!answers) {
+                  await startUserRecording();
+                } else {
+                  ws.close();
+                  setStatus("closed");
+                }
+              },
             });
-
-            if (answers) {
-              ws.close();
-              setStatus("closed");
-            } else {
-              await startUserRecording();
-            }
           }
         } catch {
           const textResponse = event.data;
           speak({
             text: textResponse,
-            languageCode: language,
+            languageCode: languageToClient,
             voiceName: "Google UK English Male",
+            onEnd: async () => {
+              await startUserRecording();
+            },
           });
-          await startUserRecording();
         }
       };
 
@@ -133,7 +142,7 @@ export function useAudioWebSocket({
       console.error("Error starting recording:", error);
       setStatus("error");
     }
-  }, [wsUrl, userId, language, startUserRecording]);
+  }, [wsUrl, userId, languageToClient, languageToServer, startUserRecording]);
 
   const sendAudio = useCallback(() => {
     const recorder = mediaRecorderRef.current;
