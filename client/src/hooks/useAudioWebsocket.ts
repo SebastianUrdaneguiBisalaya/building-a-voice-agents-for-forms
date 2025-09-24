@@ -117,6 +117,13 @@ export function useAudioWebSocket({
                 if (!answers) {
                   await startUserRecording();
                 } else {
+                  if (
+                    mediaRecorderRef.current &&
+                    mediaRecorderRef.current.state !== "inactive"
+                  ) {
+                    mediaRecorderRef.current.stop();
+                    mediaRecorderRef.current = null;
+                  }
                   ws.close();
                   setStatus("closed");
                 }

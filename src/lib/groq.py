@@ -29,6 +29,7 @@ async def greeting_groq(data: GreetingGroq):
                     f"If the current question is 'What is your name?' and the language is Spanish, you must return the question in Spanish.\n"
                     f"'What is your name?' Hola, yo soy Clara, encargada de conducir el siguiente formulario. Empecemos, la primera pregunta es: ¿Cuál es tu nombre?'\n"
                     f"Your greeting should be polite and friendly.\n"
+                    f"Important: Output must be plain text only, without Markdown, bold (**), italics, quotes, or any extra symbols.\n"
                 ),
             ),
         ],
@@ -85,6 +86,7 @@ async def validate_data_groq(data: ValidateDataGroq):
                     f"  'normalized_value': Any or null,\n"
                     f"  'reply_message': str  # human-like, polite response with either the next or current question\n"
                     f"}}\n"
+                    f"Important: Output of 'reply_message' must be plain text only, without Markdown, bold (**), italics, quotes, or any extra symbols.\n"
                 )
             ),
             MessagesGroq(
