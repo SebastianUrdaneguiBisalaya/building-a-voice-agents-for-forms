@@ -28,6 +28,19 @@ git clone https://github.com/SebastianUrdaneguiBisalaya/building-a-voice-agents-
 cd building-a-voice-agents-for-forms
 ```
 
+- Create a virtual environment
+
+```bash
+python -m venv venv
+```
+
+- Activate the virtual environment
+
+```bash
+source venv/bin/activate # (masOS)
+venv\Scripts\activate # (Windows)
+```
+
 - Install dependencies
 
 ```bash
