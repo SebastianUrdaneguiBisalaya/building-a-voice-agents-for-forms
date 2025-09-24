@@ -4,7 +4,7 @@
 
 ## Preview
 
-![Desktop image](./public/web.png)
+![Desktop image](https://res.cloudinary.com/drzumfcdp/image/upload/v1758677345/Landing%20Page%20Sebastian/web_z7zrio.png)
 
 ## Installation
 
