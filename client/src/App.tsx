@@ -1,9 +1,11 @@
 import './App.css'
 import AudioAnimations from './components/audio-animations'
+import Answers from './components/answers'
 import { useAudioWebSocket } from './hooks/useAudioWebsocket'
 
+
 function App() {
-	const { mode, sendAudio, toggleConversation, startRecording } = useAudioWebSocket({
+	const { mode, sendAudio, toggleConversation, startRecording, answers } = useAudioWebSocket({
 		wsUrl: "ws://localhost:8000/api/v1/ws/voice-agents",
 		userId: "user-1",
 		languageToClient: "en-GB",
@@ -12,8 +14,8 @@ function App() {
 
 
   return (
-    <div className='w-full h-screen flex flex-col justify-center items-center bg-[#FFEFBA] bg-gradient-to-t from-[#FFEFBA] to-[#FFFFFF]'>
-			<main className='w-full max-w-6xl h-full flex flex-col justify-center items-center gap-4'>
+    <div className='w-full h-screen flex flex-col justify-center items-center p-4 bg-[#FFEFBA] bg-gradient-to-t from-[#FFEFBA] to-[#FFFFFF]'>
+			<main className='w-full max-w-6xl h-full p-8 flex flex-col justify-center items-center gap-4'>
 				<h1 className='font-bricolage-grotesque text-5xl font-bold text-center'>Voice Agent for Forms</h1>
 				<p className='font-poppins text-sm text-gray-600'>I recommend checking that the audio is enabled in your laptop.</p>
 				{
@@ -39,6 +41,11 @@ function App() {
 						>
 							Send answer
 						</button>
+					)
+				}
+				{
+					answers && Object.keys(answers).length > 0 && (
+						<Answers answers={answers} />
 					)
 				}
 			</main>

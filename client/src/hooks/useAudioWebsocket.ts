@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { speak } from "../lib/voice";
+import { confetti } from "../lib/confetti";
 
 type UseAudioWebsocketOptions = {
   wsUrl: string;
@@ -19,6 +20,9 @@ export function useAudioWebSocket({
   const [status, setStatus] = useState<WebSocketStatus>("idle");
   const [mode, setMode] = useState<"user" | "system">("system");
   const [toggleConversation, setToggleConversation] = useState<boolean>(false);
+  const [answers, setAnswers] = useState<
+    Record<string, string | number | boolean>
+  >({});
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -87,6 +91,7 @@ export function useAudioWebSocket({
   const startRecording = useCallback(async () => {
     setToggleConversation((prev) => !prev);
     try {
+      setAnswers({});
       const url = `${wsUrl}?user_id=${encodeURIComponent(
         userId
       )}&language=${encodeURIComponent(languageToServer)}`;
@@ -124,8 +129,10 @@ export function useAudioWebSocket({
                     mediaRecorderRef.current.stop();
                     mediaRecorderRef.current = null;
                   }
+                  confetti();
                   ws.close();
                   setStatus("closed");
+                  setAnswers(answers);
                 }
               },
             });
@@ -162,6 +169,7 @@ export function useAudioWebSocket({
     status,
     mode,
     toggleConversation,
+    answers,
     startRecording,
     sendAudio,
   };

@@ -34,8 +34,6 @@ async def voice_agents(websocket: WebSocket):
                                             "type": "str"},
                                         {"key": "phone", "question": "What is your phone number?",
                                             "type": "str"},
-                                        {"key": "has_interest",
-                                            "question": "Do you have any interests?", "type": "bool"},
                                         ])
         session = sessions[user_id]
         greeting = await greeting_groq(GreetingGroq(
